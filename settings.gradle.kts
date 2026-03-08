@@ -1,1 +1,1 @@
-rootProject.name = "kafka-client"
+rootProject.name = "pulse"
