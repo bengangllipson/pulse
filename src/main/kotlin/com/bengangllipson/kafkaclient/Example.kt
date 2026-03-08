@@ -1,13 +1,12 @@
 package com.bengangllipson.kafkaclient
 
+import com.bengangllipson.kafkaclient.consumer.Consumer
 import com.bengangllipson.kafkaclient.flow.FilteredMessage
 import com.bengangllipson.kafkaclient.flow.State
 import com.bengangllipson.kafkaclient.flow.Success
 import com.bengangllipson.kafkaclient.model.Payload
 import com.bengangllipson.kafkaclient.model.ProcessingStep
 import com.bengangllipson.kafkaclient.model.WorkerConfiguration
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.apache.kafka.clients.consumer.KafkaConsumer

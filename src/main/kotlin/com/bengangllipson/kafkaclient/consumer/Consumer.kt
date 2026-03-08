@@ -1,8 +1,7 @@
 @file:OptIn(ExperimentalCoroutinesApi::class)
 
-package com.bengangllipson.kafkaclient
+package com.bengangllipson.kafkaclient.consumer
 
-import com.bengangllipson.kafkaclient.consumer.ConsumerHandle
 import com.bengangllipson.kafkaclient.flow.State
 import com.bengangllipson.kafkaclient.flow.parallel
 import com.bengangllipson.kafkaclient.model.InputMetadata
