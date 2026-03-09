@@ -23,9 +23,9 @@ import org.apache.kafka.common.serialization.StringSerializer
 import java.util.*
 
 class Producer<T>(
-    private val config: Config<T>,
-    private val recordMapper: (T) -> ProducerRecord<String, T>,
-    private val onError: (Throwable) -> Unit
+    val config: Config<T>,
+    val recordMapper: (T) -> ProducerRecord<String, T>,
+    val onError: (Throwable) -> Unit
 ) {
     data class Config<T>(
         val appName: String,
@@ -111,17 +111,5 @@ class Producer<T>(
         }
 
         return Handle(job = job, stop = stop)
-    }
-
-    data class Builder<T>(
-        val config: Config<T>,
-        val recordMapper: (T) -> ProducerRecord<String, T>,
-        val onError: (Throwable) -> Unit
-    ) {
-        fun build(): Producer<T> = Producer(
-            config = config,
-            recordMapper = recordMapper,
-            onError = onError
-        )
     }
 }

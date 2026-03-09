@@ -56,7 +56,7 @@ class Example {
                     val parsed = Json.decodeFromString<ParsedPayload>(
                         state.value.body.decodeToString()
                     )
-                    meta to Success(parsed)
+                    meta to Success(value = parsed)
                 } catch (_: Exception) {
                     meta to FilteredMessage
                 }
@@ -76,14 +76,15 @@ class Example {
                     quantity = TransformedResult.Quantity(
                         onHand = p.onHandQuantity.sumOf { it.quantity },
                         onPurchase = p.onPurchaseQuantity.sumOf { it.quantity },
-                        onTransfer = p.onTransferQuantity.sumOf { it.quantity }))
-                meta to Success(result)
+                        onTransfer = p.onTransferQuantity.sumOf { it.quantity })
+                )
+                meta to Success(value = result)
             }
         }
     }
 
     val pipeline: suspend (ProcessingStep<Payload>) -> ProcessingStep<State<TransformedResult>> = { step ->
-        step.let(::filter).let(::parse).let(::transform)
+        step.let(block = ::filter).let(block = ::parse).let(block = ::transform)
     }
 
     val commitStrategy: suspend (ProcessingStep<State<TransformedResult>>, KafkaConsumer<String, ByteArray>) -> Unit =
@@ -99,11 +100,10 @@ class Example {
         }
 
     val onError: (Throwable) -> Unit = { throwable ->
-        println("Consumer error: ${throwable.message}")
         throwable.printStackTrace()
     }
 
-    val consumer = Consumer.Builder(
+    val consumer = Consumer(
         config = Consumer.Config(
             appName = "example",
             broker = "localhost:9092",
@@ -112,10 +112,10 @@ class Example {
             autoOffsetResetConfig = "earliest",
             workerConfig = WorkerConfiguration(
                 count = 100, mailboxSize = 5000, selector = { (metadata, _) ->
-                    metadata.key.hashCode().absoluteValue.rem(100)
+                    metadata.key.hashCode().absoluteValue.rem(other = 100)
                 }),
         ), pipeline = pipeline, commitStrategy = commitStrategy, onError = onError
-    ).build()
+    )
 
     fun start() {
         consumer.start()

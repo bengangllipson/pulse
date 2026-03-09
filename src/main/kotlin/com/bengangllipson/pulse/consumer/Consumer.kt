@@ -21,10 +21,10 @@ import java.time.Duration
 import java.util.*
 
 class Consumer<O>(
-    private val config: Config,
-    private val pipeline: suspend (ProcessingStep<Payload>) -> ProcessingStep<State<O>>,
-    private val commitStrategy: suspend (ProcessingStep<State<O>>, KafkaConsumer<String, ByteArray>) -> Unit,
-    private val onError: (Throwable) -> Unit
+    val config: Config,
+    val pipeline: suspend (ProcessingStep<Payload>) -> ProcessingStep<State<O>>,
+    val commitStrategy: suspend (ProcessingStep<State<O>>, KafkaConsumer<String, ByteArray>) -> Unit,
+    val onError: (Throwable) -> Unit
 ) {
     data class Config(
         val appName: String,
@@ -57,7 +57,7 @@ class Consumer<O>(
     fun start(): Handle {
         val consumer = createConsumer()
         consumer.subscribe(config.topics)
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val scope = CoroutineScope(context = SupervisorJob() + Dispatchers.Default)
         val job = scope.launch {
             try {
                 while (isActive) {
@@ -67,7 +67,7 @@ class Consumer<O>(
 
                     val batchSize = records.count()
                     if (batchSize == 0) {
-                        delay(100L)
+                        delay(timeMillis = 100L)
                         continue
                     }
 
@@ -81,11 +81,11 @@ class Consumer<O>(
                                 partitionOffset = Pair(record.partition(), record.offset()),
                                 isEndOfBatch = index + 1 == batchSize
                             )
-                            send(meta to Payload(key = key, body = body))
+                            send(element = meta to Payload(key = key, body = body))
                         }
-                    }.flowOn(consumerThread)
+                    }.flowOn(context = consumerThread)
 
-                    kafkaMessages.parallel(config.workerConfig) { step ->
+                    kafkaMessages.parallel(workers = config.workerConfig) { step ->
                         pipeline(step)
                     }.collect { processedStep ->
                         try {
@@ -106,27 +106,12 @@ class Consumer<O>(
             job.cancelAndJoin()
             try {
                 consumer.close()
-            } catch (_: Throwable) {
+            } catch (t: Throwable) {
+                onError(t)
             }
             scope.cancel()
         }
 
         return Handle(job = job, stop = stop)
-    }
-
-    data class Builder<O>(
-        val config: Config,
-        val pipeline: suspend (ProcessingStep<Payload>) -> ProcessingStep<State<O>>,
-        val commitStrategy: suspend (ProcessingStep<State<O>>, KafkaConsumer<String, ByteArray>) -> Unit,
-        val onError: (Throwable) -> Unit
-    ) {
-        fun build(): Consumer<O> {
-            return Consumer(
-                config = config,
-                pipeline = pipeline,
-                commitStrategy = commitStrategy,
-                onError = onError
-            )
-        }
     }
 }

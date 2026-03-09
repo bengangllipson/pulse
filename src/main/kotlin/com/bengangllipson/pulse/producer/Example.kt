@@ -10,40 +10,57 @@ import kotlin.math.absoluteValue
 data class MyEvent(
     val itemId: String,
     val locationId: String,
-    val onHandQuantity: Int,
-    val onPurchaseQuantity: Int,
-    val onTransferQuantity: Int
+    val price: Float
 )
 
 class Example {
-    val mapper: (MyEvent) -> ProducerRecord<String, MyEvent> = { myEvent ->
+    val producerConfig = Producer.Config<MyEvent>(
+        appName = "example",
+        broker = "localhost:9092",
+        topic = "my-topic",
+        workerConfig = WorkerConfiguration(
+            count = 100,
+            mailboxSize = 5000,
+            selector = { myEvent ->
+                myEvent.itemId.hashCode().absoluteValue % 100
+            }
+        )
+    )
+
+
+    val recordMapper: (MyEvent) -> ProducerRecord<String, MyEvent> = { myEvent ->
         ProducerRecord(
-            "my-topic", myEvent.itemId, myEvent
+            producerConfig.topic, myEvent.itemId, myEvent
         )
     }
 
     val onError: (Throwable) -> Unit = { throwable ->
-        println("Consumer error: ${throwable.message}")
         throwable.printStackTrace()
     }
 
-    val producer = Producer.Builder(
-        config = Producer.Config(
-            appName = "example",
-            broker = "localhost:9092",
-            topic = "my-topic",
-            workerConfig = WorkerConfiguration(
-                count = 100, mailboxSize = 5000, selector = { myEvent ->
-                    myEvent.itemId.hashCode().absoluteValue.rem(100)
-                }),
-        ), recordMapper = mapper, onError = onError
-    ).build()
+    val producer = Producer(
+        config = producerConfig,
+        recordMapper = recordMapper,
+        onError = onError
+    )
 
     fun start() {
         val input = flowOf(
-            MyEvent("1", "12", 5, 4, 3),
-            MyEvent("2", "13", 5, 4, 3),
-            MyEvent("3", "14", 5, 4, 3),
+            MyEvent(
+                itemId = "1",
+                locationId = "12",
+                price = 14.99f
+            ),
+            MyEvent(
+                itemId = "2",
+                locationId = "13",
+                price = 24.99f
+            ),
+            MyEvent(
+                itemId = "3",
+                locationId = "14",
+                price = 9.99f
+            ),
         )
         producer.start(input)
     }

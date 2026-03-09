@@ -4,4 +4,4 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
 
 val producerThread =
-    Executors.newSingleThreadExecutor { r -> Thread(r, "kafka-producer") }.asCoroutineDispatcher()
+    Executors.newSingleThreadExecutor { runnable -> Thread(runnable, "kafka-producer") }.asCoroutineDispatcher()

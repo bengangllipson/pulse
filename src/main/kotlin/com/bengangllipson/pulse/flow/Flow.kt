@@ -15,32 +15,32 @@ import kotlin.math.min
 @OptIn(ExperimentalCoroutinesApi::class)
 fun <T, R> Flow<T>.parallel(
     workers: WorkerConfiguration<T>, capacity: Int = min(
-        Int.MAX_VALUE, workers.count * workers.mailboxSize
+        a = Int.MAX_VALUE, b = workers.count * workers.mailboxSize
     ), workerProcessor: suspend (T) -> R
 ): Flow<R> = channelFlow {
     coroutineScope {
         val workerMailboxes = (0 until workers.count).map {
-            Channel<Pair<T, CompletableDeferred<R>>>(workers.mailboxSize)
+            Channel<Pair<T, CompletableDeferred<R>>>(capacity = workers.mailboxSize)
         }
         val outbox = produce(capacity = capacity) {
             this@parallel.collect {
                 val deferred = CompletableDeferred<R>()
                 workerMailboxes[workers.selector(it)].send(
-                    it to deferred
+                    element = it to deferred
                 )
-                send(deferred)
+                send(element = deferred)
             }
             workerMailboxes.forEach { it.close() }
         }
         workerMailboxes.forEach { mailbox ->
             launch {
                 mailbox.consumeEach { (value, deferred) ->
-                    deferred.complete(workerProcessor(value))
+                    deferred.complete(value = workerProcessor(value))
                 }
             }
         }
         outbox.consumeEach { deferred ->
-            this@channelFlow.send(deferred.await())
+            this@channelFlow.send(element = deferred.await())
         }
     }
 }
