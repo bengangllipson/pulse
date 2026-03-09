@@ -1,6 +1,6 @@
 # Pulse
 
-A high performance engine for Apache Kafka. Pulse uses Kotlin coroutines nad flows to expose a simple structure to
+A high performance engine for Apache Kafka. Pulse uses Kotlin coroutines and flows to expose a simple structure to
 compose parallelized, back-pressure aware concurrent data processing pipelines.
 
 ## Features
